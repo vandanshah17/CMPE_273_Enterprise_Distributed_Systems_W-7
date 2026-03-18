@@ -1,0 +1,12 @@
+apiVersion: split.smi-spec.io/v1alpha2
+kind: TrafficSplit
+metadata:
+  name: hello-split
+  namespace: discovery-mesh-linkerd
+spec:
+  service: hello
+  backends:
+    - service: hello-v1
+      weight: 50
+    - service: hello-v2
+      weight: 50

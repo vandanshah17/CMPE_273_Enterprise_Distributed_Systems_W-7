@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: discovery-mesh
+  labels:
+    istio-injection: enabled
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-v1
+  namespace: discovery-mesh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: hello
+        version: v1
+    spec:
+      containers:
+        - name: hello
+          image: discovery/hello-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVICE_NAME
+              value: python-hello-service
+            - name: SERVICE_ID
+              value: python-hello-service-v1
+            - name: SERVICE_HOST
+              value: hello
+            - name: SERVICE_PORT
+              value: "8000"
+            - name: CONSUL_HOST
+              value: consul-not-used
+            - name: ENABLE_CONSUL_REGISTRATION
+              value: "false"
+          ports:
+            - containerPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-v2
+  namespace: discovery-mesh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: hello
+        version: v2
+    spec:
+      containers:
+        - name: hello
+          image: discovery/hello-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVICE_NAME
+              value: python-hello-service
+            - name: SERVICE_ID
+              value: python-hello-service-v2
+            - name: SERVICE_HOST
+              value: hello
+            - name: SERVICE_PORT
+              value: "8000"
+            - name: CONSUL_HOST
+              value: consul-not-used
+            - name: ENABLE_CONSUL_REGISTRATION
+              value: "false"
+          ports:
+            - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  namespace: discovery-mesh
+spec:
+  selector:
+    app: hello
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caller
+  namespace: discovery-mesh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: caller
+  template:
+    metadata:
+      labels:
+        app: caller
+    spec:
+      containers:
+        - name: caller
+          image: curlimages/curl:8.9.1
+          command: ["/bin/sh", "-c"]
+          args: ["while true; do curl -s http://hello:8000/hello; sleep 2; done"]

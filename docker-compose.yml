@@ -1,0 +1,63 @@
+services:
+  consul:
+    image: hashicorp/consul:1.20
+    container_name: consul
+    command: "agent -dev -client=0.0.0.0 -ui"
+    ports:
+      - "8500:8500"
+    networks:
+      - discovery-net
+
+  service-1:
+    build: ./service
+    container_name: service-1
+    environment:
+      SERVICE_NAME: python-hello-service
+      SERVICE_ID: python-hello-service-1
+      SERVICE_HOST: service-1
+      SERVICE_PORT: 8000
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    depends_on:
+      - consul
+    ports:
+      - "8001:8000"
+    networks:
+      - discovery-net
+
+  service-2:
+    build: ./service
+    container_name: service-2
+    environment:
+      SERVICE_NAME: python-hello-service
+      SERVICE_ID: python-hello-service-2
+      SERVICE_HOST: service-2
+      SERVICE_PORT: 8000
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    depends_on:
+      - consul
+    ports:
+      - "8002:8000"
+    networks:
+      - discovery-net
+
+  client:
+    build: ./client
+    container_name: discovery-client
+    environment:
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+      TARGET_SERVICE: python-hello-service
+    depends_on:
+      - consul
+      - service-1
+      - service-2
+    ports:
+      - "9000:9000"
+    networks:
+      - discovery-net
+
+networks:
+  discovery-net:
+    driver: bridge
